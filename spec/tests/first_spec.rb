@@ -11,31 +11,48 @@ describe 'Zillow web site' do
 
       it 'sends a message to each agent' do
         agents = []
-        @zillow_search.listings { |listing|
-          #TODO: scroll to listing before click
-          listing.click
-          sleep 2
+        max_page = @zillow_search.max_page
+        while @zillow_search.current_page != max_page
+          sleep 1
+          puts "current page: #{@zillow_search.current_page} max: #{max_page}"
+          # Starts main action
+          listings_size = @zillow_search.listings.size
+          while listings_size > 0
+            puts "items left to go on this page: #{listings_size}"
+            listing = @zillow_search.listings.at(listings_size - 1)
+            listing.native.location_once_scrolled_into_view
+            sleep 1
+            listing.click
+            sleep 1
 
-          #TODO: check if no blocks
-          @listing.agent_blocks.each {|block|
-            agent_name = block.find('.profile-name-link').text
-            if agents.include? agent_name
-              next
-            else
-              @listing.select_checkbox block
-              agents << agent_name
+            blocks = @listing.agent_blocks
+            unless blocks.size.zero?
+              @listing.agent_blocks.each {|block|
+                agent_name = block.find('.name').text
+                if agents.include? agent_name
+                  next
+                else
+                  @listing.select_checkbox block
+                  agents << agent_name
+                end
+              }
+              @listing.fill_name 'name name'
+              @listing.fill_phone '+14151231234'
+              @listing.fill_email 'email@emai.com'
+              @listing.fill_message 'message'
             end
-          }
-          @listing.fill_name 'name name'
-          @listing.fill_phone '+14151231234'
-          @listing.fill_email 'email@emai.com'
-          @listing.fill_message 'message'
-          @listing.close
-          puts "<<<<<<<<<<<<<<<<<<<<<<<"
-          puts agents
-          puts ">>>>>>>>>>>>>>>>>>>>>>>"
+            @listing.close
+            listings_size = listings_size - 1
+            puts "Served #{agents.size} agents"
+          end
+          # Ends Main Action
 
-        }
+          @zillow_search.next_page
+        end
+
+        puts "Served #{agents.size} agents"
+        expect(agents.uniq.size).to eq agents.size
+        expect(listings_size).to eq 0
 
       end
   end

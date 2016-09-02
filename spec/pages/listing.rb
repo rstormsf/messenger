@@ -3,14 +3,21 @@ class Listing
   include Capybara::DSL
 
   def agent_blocks
+    attempt = 1
     begin
-      sleep 3
+      sleep 1
       form_id = '#lead-form_contact-tall'
       within form_id do
         all('.signature-refactor')
       end
     rescue Exception
-      puts "coulnd't find element, but I don't care"
+      puts "coulnd't find element, retrying: #{attempt}"
+      if attempt < 3
+        attempt = attempt + 1
+        retry
+      else
+        return []
+      end
     end
 
   end
